@@ -9,6 +9,7 @@ using UnityEngine.SceneManagement;
 public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
 {
     [SerializeField] NetworkPrefabRef _playerprefab;
+    Dictionary<PlayerRef, NetworkObject> _players = new Dictionary<PlayerRef, NetworkObject>();
     NetworkRunner _networkRunner;
 
     #region Mono
@@ -73,7 +74,10 @@ public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
     }
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
-        ;
+        if (!runner.IsServer)
+            return;
+        var _networkObject = runner.Spawn(_playerprefab, Vector3.zero, Quaternion.identity, player);
+        _players.Add(player, _networkObject);
     }
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
