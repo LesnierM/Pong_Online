@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
 {
     [SerializeField] NetworkPrefabRef _playerprefab;
-    Dictionary<PlayerRef, NetworkObject> _players = new Dictionary<PlayerRef, NetworkObject>();
+    Dictionary<PlayerRef, NetworkObject> _playersSpawned = new Dictionary<PlayerRef, NetworkObject>();
     NetworkRunner _networkRunner;
 
     #region Mono
@@ -68,6 +68,19 @@ public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
     }
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
+        Vector2 _input = Vector2.zero;
+        NetworkInputData _inputData = new NetworkInputData();
+        if (Input.GetKey(KeyCode.W))
+            _input.y = 1;
+        if (Input.GetKey(KeyCode.S))
+            _input.y = -1;
+        if (Input.GetKey(KeyCode.A))
+            _input.x = -1;
+        if (Input.GetKey(KeyCode.D))
+            _input.x = 1;
+        _inputData.SetInputs(_input);
+        input.Set<NetworkInputData>(_inputData);
+        Debug.Log("Send input");
     }
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
     {
@@ -77,10 +90,15 @@ public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         if (!runner.IsServer)
             return;
         var _networkObject = runner.Spawn(_playerprefab, Vector3.zero, Quaternion.identity, player);
-        _players.Add(player, _networkObject);
+        _playersSpawned.Add(player, _networkObject);
     }
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
+        if(_playersSpawned.TryGetValue(player,out NetworkObject playerObejct))
+        {
+            runner.Despawn(playerObejct);
+            _playersSpawned.Remove(player);
+        }
     }
     public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data)
     {
